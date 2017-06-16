@@ -1,0 +1,65 @@
+15:16:12 **** Build of configuration Debug for project smartfusion2-cortex-m3-blinky ****
+make all 
+Building file: ../hal/CortexM3/GNU/hal.S
+Invoking: Cross ARM GNU Assembler
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -x assembler-with-cpp -MMD -MP -MF"hal/CortexM3/GNU/hal.d" -MT"hal/CortexM3/GNU/hal.o" -c -o "hal/CortexM3/GNU/hal.o" "../hal/CortexM3/GNU/hal.S"
+Finished building: ../hal/CortexM3/GNU/hal.S
+ 
+Building file: ../hal/CortexM3/GNU/hw_reg_access.S
+Invoking: Cross ARM GNU Assembler
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -x assembler-with-cpp -MMD -MP -MF"hal/CortexM3/GNU/hw_reg_access.d" -MT"hal/CortexM3/GNU/hw_reg_access.o" -c -o "hal/CortexM3/GNU/hw_reg_access.o" "../hal/CortexM3/GNU/hw_reg_access.S"
+Finished building: ../hal/CortexM3/GNU/hw_reg_access.S
+ 
+Building file: ../hal/CortexM3/cortex_nvic.c
+Invoking: Cross ARM GNU C Compiler
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS\startup_gcc" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers\mss_gpio" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config\sys_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3\GNU" -std=gnu11 --specs=cmsis.specs -MMD -MP -MF"hal/CortexM3/cortex_nvic.d" -MT"hal/CortexM3/cortex_nvic.o" -c -o "hal/CortexM3/cortex_nvic.o" "../hal/CortexM3/cortex_nvic.c"
+Finished building: ../hal/CortexM3/cortex_nvic.c
+ 
+Building file: ../drivers_config/sys_config/sys_config.c
+Invoking: Cross ARM GNU C Compiler
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS\startup_gcc" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers\mss_gpio" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config\sys_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3\GNU" -std=gnu11 --specs=cmsis.specs -MMD -MP -MF"drivers_config/sys_config/sys_config.d" -MT"drivers_config/sys_config/sys_config.o" -c -o "drivers_config/sys_config/sys_config.o" "../drivers_config/sys_config/sys_config.c"
+Finished building: ../drivers_config/sys_config/sys_config.c
+ 
+Building file: ../drivers/mss_gpio/mss_gpio.c
+Invoking: Cross ARM GNU C Compiler
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS\startup_gcc" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers\mss_gpio" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config\sys_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3\GNU" -std=gnu11 --specs=cmsis.specs -MMD -MP -MF"drivers/mss_gpio/mss_gpio.d" -MT"drivers/mss_gpio/mss_gpio.o" -c -o "drivers/mss_gpio/mss_gpio.o" "../drivers/mss_gpio/mss_gpio.c"
+Finished building: ../drivers/mss_gpio/mss_gpio.c
+ 
+Building file: ../CMSIS/startup_gcc/newlib_stubs.c
+Invoking: Cross ARM GNU C Compiler
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS\startup_gcc" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers\mss_gpio" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config\sys_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3\GNU" -std=gnu11 --specs=cmsis.specs -MMD -MP -MF"CMSIS/startup_gcc/newlib_stubs.d" -MT"CMSIS/startup_gcc/newlib_stubs.o" -c -o "CMSIS/startup_gcc/newlib_stubs.o" "../CMSIS/startup_gcc/newlib_stubs.c"
+Finished building: ../CMSIS/startup_gcc/newlib_stubs.c
+ 
+Building file: ../CMSIS/startup_gcc/startup_m2sxxx.S
+Invoking: Cross ARM GNU Assembler
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -x assembler-with-cpp -MMD -MP -MF"CMSIS/startup_gcc/startup_m2sxxx.d" -MT"CMSIS/startup_gcc/startup_m2sxxx.o" -c -o "CMSIS/startup_gcc/startup_m2sxxx.o" "../CMSIS/startup_gcc/startup_m2sxxx.S"
+Finished building: ../CMSIS/startup_gcc/startup_m2sxxx.S
+ 
+Building file: ../CMSIS/system_m2sxxx.c
+Invoking: Cross ARM GNU C Compiler
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS\startup_gcc" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers\mss_gpio" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config\sys_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3\GNU" -std=gnu11 --specs=cmsis.specs -MMD -MP -MF"CMSIS/system_m2sxxx.d" -MT"CMSIS/system_m2sxxx.o" -c -o "CMSIS/system_m2sxxx.o" "../CMSIS/system_m2sxxx.c"
+Finished building: ../CMSIS/system_m2sxxx.c
+ 
+Building file: ../main.c
+Invoking: Cross ARM GNU C Compiler
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS\startup_gcc" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers\mss_gpio" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\drivers_config\sys_config" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3" -I"C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\hal\CortexM3\GNU" -std=gnu11 --specs=cmsis.specs -MMD -MP -MF"main.d" -MT"main.o" -c -o "main.o" "../main.c"
+Finished building: ../main.c
+ 
+Building target: smartfusion2-cortex-m3-blinky.elf
+Invoking: Cross ARM GNU C Linker
+arm-none-eabi-gcc -mcpu=cortex-m3 -mthumb -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections  -g3 -T "C:\Microsemi\SoftConsole_v5.1.0.19\SoftConsole_v5.1\extras\workspace.examples\smartfusion2-cortex-m3-blinky\CMSIS\startup_gcc\debug-in-microsemi-smartfusion2-esram.ld" -Xlinker --gc-sections -Wl,-Map,"smartfusion2-cortex-m3-blinky.map" --specs=nano.specs -o "smartfusion2-cortex-m3-blinky.elf"  ./hal/CortexM3/GNU/hal.o ./hal/CortexM3/GNU/hw_reg_access.o  ./hal/CortexM3/cortex_nvic.o  ./drivers_config/sys_config/sys_config.o  ./drivers/mss_gpio/mss_gpio.o  ./CMSIS/startup_gcc/newlib_stubs.o ./CMSIS/startup_gcc/startup_m2sxxx.o  ./CMSIS/system_m2sxxx.o  ./main.o   
+Finished building target: smartfusion2-cortex-m3-blinky.elf
+ 
+Invoking: Cross ARM GNU Create Flash Image
+arm-none-eabi-objcopy -O ihex "smartfusion2-cortex-m3-blinky.elf"  "smartfusion2-cortex-m3-blinky.hex"
+Finished building: smartfusion2-cortex-m3-blinky.hex
+ 
+Invoking: Cross ARM GNU Print Size
+arm-none-eabi-size --format=berkeley "smartfusion2-cortex-m3-blinky.elf"
+   text	   data	    bss	    dec	    hex	filename
+   2208	     16	  63312	  65536	  10000	smartfusion2-cortex-m3-blinky.elf
+Finished building: smartfusion2-cortex-m3-blinky.siz
+ 
+
+15:16:15 Build Finished (took 3s.362ms)
+

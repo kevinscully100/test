@@ -1,0 +1,570 @@
+/*------------------------------------------------------------------------------
+ * Program to read the ID code from a target softcore processor located in
+ * in the fabric via the dedicated JTAG pins on a Microsemi device.
+ *
+ * SVN $Revision: 29972 $
+ * SVN $Date: 2017-06-01 12:07:14 +0100 (Thu, 01 Jun 2017) $
+ *
+ * Notes:
+ * -The dp_jtag_init() function has been modified in the dpuser.c file
+ * to toggle the TRSTB line every time that the TAP FSM enters the RUN_TEST_IDLE
+ * state
+ * -Custom implementations of the IR and DR scan functions have been implemented
+ * along with the dp_in_out_shift() function to allow N-bit payload data scans.
+ * The original implementation had issues in that it only scanned out the first
+ * 8 binary bits
+ */
+#include <stdint.h>
+#include "riscv_hal.h"
+#include "hw_platform.h"
+#include "core_uart_apb.h"
+#include "core_gpio.h"
+#include "DirectC\dpuser.h"
+#include "DirectC\JTAG\dpjtag.h"
+
+// Macros used to define the IR code that the tunnel controller associates
+// with the target softcore processor in the target FPGA device
+#define TGT_IR_CODE          0x55
+
+// Specify the relative position of the device containing the target softcore
+// processor in the JTAG chain
+#define NUM_LEAD_PAD_BITS 0
+#define NUM_TRAIL_PAD_BITS 0
+
+// Bypass Instruction code
+#define BYPASS 0xFF
+
+// Macro used by the int_to_ascii_array() function
+#define HEX_RADIX 16
+#define DEC_RADIX 10
+
+extern UART_instance_t g_uart;
+static uint8_t g_num_lead_pad_bits = NUM_LEAD_PAD_BITS;
+static uint8_t g_num_trail_pad_bits = NUM_TRAIL_PAD_BITS;
+static uint8_t g_ir_code = TGT_IR_CODE;
+
+/*------------------------------------------------------------------------------
+ * Global constants
+ */
+const uint8_t g_title_msg[]=
+    "\r\n*****************************************************************************"
+    "\r\nProgram to perform tunneled JTAG scans to read a softcore processor's ID Code"
+    "\r\n*****************************************************************************";
+const uint8_t g_instructions_msg[] =
+    "\r\n*****************************************************************************"
+    "\r\nPress:"
+    "\r\n0 -> Bring the FPGA TAP to test logic reset state"
+    "\r\n1 -> Bring the FPGA TAP from test logic reset to run test idle"
+    "\r\n2 -> Load the FPGA's IR register with the IR Code used by the tunnel controller"
+    "\r\n3 -> Tunneled operation to bring the targets TAP from test_logic_reset to run_test_idle"
+    "\r\n4 -> Tunneled IR scan to load the IDCODE instruction into the target's IR register"
+    "\r\n5 -> Tunneled DR scan to push out zeros to read the targets ID code"
+    "\r\n6 -> Read the target devices ID code"
+    "\r\nl -> Set the number of leading devices in the JTAG chain (Range 0->7)"
+    "\r\nt -> Set the number of trailing devices in the JTAG chain (Range 0->7)"
+    "\r\ni -> Set the IR code of the tunnel controller in the target device (2 hex characters - No prefix required)"
+    "\r\n*****************************************************************************";
+
+const uint8_t g_id_code_msg[] =
+    "\r\nThe device ID code = 0x";
+
+/*------------------------------------------------------------------------------
+ * Function prototypes
+ */
+void cli_menu(void);
+uint32_t get_id_code_no_chain(uint32_t);
+uint8_t tunnel_pkt_create(uint8_t *, uint8_t, uint8_t, uint8_t, uint32_t, uint8_t, uint8_t);
+uint32_t create_bin_array (uint32_t, uint8_t *, uint8_t);
+void int_to_ascii_array(uint8_t *, uint32_t, uint8_t);
+uint32_t hex_ascii_array_to_int (uint8_t, uint8_t *);
+
+void IR_SCAN(uint8_t, uint32_t);
+void tunnelled_exit_tst_logic_reset(void);
+void tunnelled_ir_scan(uint8_t, uint32_t);
+uint32_t tunnelled_dr_scan(uint8_t, uint32_t);
+
+/*------------------------------------------------------------------------------
+ * Main function
+ */
+int main(int argc, char **argv)
+{
+    PLIC_init();
+
+    UART_init( &g_uart, COREUARTAPB0_BASE_ADDR, BAUD_VALUE_115200, (DATA_8_BITS | NO_PARITY) );
+    UART_polled_tx_string( &g_uart, g_title_msg);
+
+    GPIO_init(&g_gpio_in, COREGPIO_IN_BASE_ADDR, GPIO_APB_32_BITS_BUS);
+    GPIO_init(&g_gpio_out, COREGPIO_OUT_BASE_ADDR, GPIO_APB_32_BITS_BUS);
+
+    configure_MSSIO();
+    hardware_interface = GPIO_SEL;
+
+    while (1)
+    {
+        cli_menu();
+    }
+    return 0;
+}
+
+/*------------------------------------------------------------------------------
+ * Command line interface function
+ */
+void cli_menu
+(
+    void
+)
+{
+    uint8_t rx_char[2] = {0u, 0u};
+    uint8_t rx_size = 0u;
+    uint32_t idCode = 0u;
+    uint8_t idCodeArray [11]; // Holds largest value in decimal that can be
+                              // stored in 32-bit unsigned integer and a null
+                              // character
+
+    UART_polled_tx_string( &g_uart, g_instructions_msg);
+
+    do
+    {
+        rx_size = UART_get_rx(&g_uart, rx_char, 1u);
+    } while (0u == rx_size);
+
+    switch (rx_char[0])
+    {
+        case '0':
+                // Bring the FPGA TAP to test logic reset state
+                UART_polled_tx_string(&g_uart, (uint8_t *)"\r\nBring the FPGA TAP to test logic reset state");
+                goto_jtag_state(JTAG_TEST_LOGIC_RESET,0u);
+            break;
+        case '1':
+                // Bring the FPGA TAP from test logic reset to run test idle
+                UART_polled_tx_string(&g_uart, (uint8_t *)"\r\nBring the FPGA TAP from test logic reset to run test idle");
+                goto_jtag_state(JTAG_RUN_TEST_IDLE,0u);
+            break;
+        case '2':
+                // Loaded the FPGA's IR register with the IR Code used by the tunnel controller logic
+                UART_polled_tx_string(&g_uart, (uint8_t *)"\r\nLoad the FPGA's IR register with the IR Code used by the tunnel controller logic");
+                IR_SCAN(8u, g_ir_code);
+            break;
+        case '3':
+                // Do a tunneled operation to bring the target's TAP from test_logic_reset to run_test_idle
+                UART_polled_tx_string(&g_uart, (uint8_t *)"\r\nDo a tunneled operation to bring the target's TAP from test_logic_reset to run_test_idle");
+                tunnelled_exit_tst_logic_reset();
+            break;
+        case '4':
+                // Tunneled IR scan to load the IDCODE instruction into the target's IR register
+                UART_polled_tx_string(&g_uart, (uint8_t *)"\r\nTunneled IR scan to load the IDCODE instruction into the target's IR register");
+                tunnelled_ir_scan(5, 0b00001);
+            break;
+        case '5':
+                // Tunneled DR scan to push out zeros to read the targets ID code
+                // N.B: Need to push through an extra zero as there's a pipeline register in the FPGA fabric that needs to be flushed before the
+                // ID code is received.
+                UART_polled_tx_string(&g_uart, (uint8_t *)"\r\nTunneled DR scan to push out zeros to read the targets ID code");
+                idCode = tunnelled_dr_scan(33, 0);
+                UART_polled_tx_string(&g_uart, g_id_code_msg);
+                int_to_ascii_array((uint8_t *)idCodeArray, idCode, HEX_RADIX);
+                UART_polled_tx_string(&g_uart, idCodeArray);
+            break;
+        case '6':
+                // Read the target devices ID code
+                UART_polled_tx_string(&g_uart, (uint8_t *)"\r\nRead the target devices ID code");
+                idCode = get_id_code_no_chain(g_ir_code);
+                UART_polled_tx_string(&g_uart, g_id_code_msg);
+                int_to_ascii_array((uint8_t *)idCodeArray, idCode, HEX_RADIX);
+                UART_polled_tx_string(&g_uart, idCodeArray);
+            break;
+        case 'l':
+                // Set the number of leading devices in the JTAG chain
+                UART_polled_tx_string(&g_uart, (uint8_t *)"\r\nSet the number of leading devices in the JTAG chain");
+
+                do {
+                    rx_size = UART_get_rx(&g_uart, rx_char, 1u);
+                } while (0u == rx_size);
+
+                // Convert the received character from an ASCII character to an
+                // integer
+                g_num_lead_pad_bits = (uint8_t)rx_char[0] -'0';
+            break;
+        case 't':
+                // Set the number of trailing devices in the JTAG chain
+                UART_polled_tx_string(&g_uart, (uint8_t *)"\r\nSet the number of trailing devices in the JTAG chain");
+
+                do {
+                    rx_size = UART_get_rx(&g_uart, rx_char, 1u);
+                } while (0u == rx_size);
+
+                // Convert the received character from an ASCII character to an
+                // integer
+                g_num_trail_pad_bits = (uint8_t)rx_char[0] -'0';
+            break;
+        case 'i':
+                // Set the IR code
+                UART_polled_tx_string(&g_uart, (uint8_t *)"\r\nSet the IR code. 0x");
+
+                // Wait for 2 hex characters to be received from the CLI
+                for(uint8_t cnt = 0; cnt < 2; ++cnt)
+                {
+                    do
+                    {
+                        rx_size = UART_get_rx(&g_uart, &rx_char[cnt], 1u);
+                    } while (0u == rx_size);
+                }
+
+                // Convert the array of ASCII characters received to an unsigned
+                // integer
+                g_ir_code = hex_ascii_array_to_int(2u, (uint8_t *)rx_char);
+            break;
+        default:
+                UART_polled_tx_string(&g_uart, (uint8_t *)"\r\nNot a valid ID code");
+            break;
+    }
+}
+
+/*------------------------------------------------------------------------------
+ * Function to perform an IR scan to either an un-chained or chained FPGA TAP
+ */
+void IR_SCAN (
+    uint8_t  inst_size,
+    uint32_t instruction
+)
+{
+    uint8_t idx;
+    uint8_t array_idx = 0u;
+    uint8_t instruct_bin_array[120]; // Large enough for a 15 device chain (7 leading/7 trailing)
+
+    // Load the IR registers of any leading devices in the JTAG chain with
+    // the BYPASS instruction.
+    for (idx = 0; idx < g_num_lead_pad_bits; ++idx)
+    {
+        create_bin_array(BYPASS, (uint8_t *)&instruct_bin_array[array_idx], inst_size);
+        array_idx = array_idx + inst_size;
+    }
+    
+    // Create an 8 element binary character array with the instruction for
+    // passing to the IRSCAN_Out function
+    create_bin_array(instruction, (uint8_t *)&instruct_bin_array[array_idx], inst_size);
+    array_idx = array_idx + inst_size;
+
+    // Load the IR registers of any trailing devices in the JTAG chain with
+    // the BYPASS instruction.
+    for (idx = 0; idx < g_num_trail_pad_bits; ++idx)
+    {
+        create_bin_array(BYPASS, (uint8_t *)&instruct_bin_array[array_idx], inst_size);
+        array_idx = array_idx + inst_size;
+    }
+
+    // Do an IR scan to put the IR code of the target's tunnel controller in the FPGA IR register
+    // and all other chained TAPs in BYPASS.
+    IRSCAN_out_custom((inst_size*(g_num_lead_pad_bits+g_num_trail_pad_bits+1)), (uint8_t *)instruct_bin_array);
+}
+
+/*------------------------------------------------------------------------------
+ * Function to read the ID code of an chained or un-chained device
+ */
+uint32_t get_id_code_no_chain
+(
+    uint32_t ir_code
+)
+{
+    uint32_t idCode;
+
+    // Bring the FPGA TAP from test logic reset to run test idle
+    goto_jtag_state(JTAG_RUN_TEST_IDLE, 0u);
+
+    // Go back to test_logic_reset to generate a TRSTN assertion. The dp_jtag_init()
+    // function has been modified so that a TRSTN toggles high-low-high whilst
+    // the clock is high
+    goto_jtag_state(JTAG_TEST_LOGIC_RESET,0u);
+
+    // Bring the FPGA TAP from test logic reset to run test idle
+    goto_jtag_state(JTAG_RUN_TEST_IDLE, 0u);
+
+    // Do an IR scan to put the IR code of the target's tunnel controller in the FPGA IR register
+    // The OPCODE_BIT_LENGTH macro is set to 8u in dpalg.h
+    IR_SCAN(8u, ir_code);
+
+    // Do a tunneled operation to bring the target's TAP from test_logic_reset to run_test_idle
+    tunnelled_exit_tst_logic_reset();
+
+    // Tunneled IR scan to load the IDCODE instruction into the target's IR register
+    tunnelled_ir_scan(5, 0b00001);
+
+    // Tunneled DR scan to push out zeros to read the targets ID code
+    // N.B: Need to push through an extra zero as there's a pipeline register in the FPGA ASIC that
+    // needs to be flushed before the ID code is received.
+    idCode = tunnelled_dr_scan(33, 0);
+
+    return idCode;
+}
+
+/*------------------------------------------------------------------------------
+ * Function to form a tunnel JTAG packet
+ */
+uint8_t tunnel_pkt_create(
+    uint8_t * p_tunnel_pkt,
+    uint8_t in_trav_len,
+    uint8_t in_trav_data,
+    uint8_t payload_data_len,
+    uint32_t payload_data_data,
+    uint8_t out_trav_len,
+    uint8_t out_trav_data
+)
+{
+    uint8_t  tunnel_packet_len;
+
+    tunnel_packet_len = 12 + in_trav_len + payload_data_len + out_trav_len;
+
+    p_tunnel_pkt = (uint8_t *)create_bin_array((uint32_t)in_trav_len,       (uint8_t *)p_tunnel_pkt,                3);
+    p_tunnel_pkt = (uint8_t *)create_bin_array((uint32_t)in_trav_data,      (uint8_t *)p_tunnel_pkt,      in_trav_len);
+    p_tunnel_pkt = (uint8_t *)create_bin_array((uint32_t)payload_data_len,  (uint8_t *)p_tunnel_pkt,                6);
+    p_tunnel_pkt = (uint8_t *)create_bin_array(payload_data_data,           (uint8_t *)p_tunnel_pkt, payload_data_len);
+    p_tunnel_pkt = (uint8_t *)create_bin_array((uint32_t)out_trav_len,      (uint8_t *)p_tunnel_pkt,                3);
+    p_tunnel_pkt = (uint8_t *)create_bin_array((uint32_t)out_trav_data,     (uint8_t *)p_tunnel_pkt,     out_trav_len);
+
+    return tunnel_packet_len;
+}
+
+/*------------------------------------------------------------------------------
+ * Function to convert a 32-bit integer to a binary array
+ */
+uint32_t create_bin_array (
+    uint32_t data_in,
+    uint8_t * p_target_array,
+    uint8_t num_of_bits
+)
+{
+    for (uint8_t bit_idx = 0; bit_idx < num_of_bits; ++bit_idx)
+    {
+        *p_target_array = data_in%2;
+        data_in = data_in/2;
+        ++p_target_array;
+    }
+    // Return the address of the next location in the array
+    return ((uint32_t)p_target_array);
+}
+
+/*------------------------------------------------------------------------------
+ * Function perform a tunneled JTAG operation to exit test logic reset state
+ */
+void tunnelled_exit_tst_logic_reset
+(
+    void
+)
+{
+    uint8_t tunnel_pkt [64];
+    uint8_t in_buff [64];
+    uint8_t pkt_len;
+    uint8_t idx;
+
+    // Pad the start of the DR scan with padding '0's to navigate through the
+    // bypass registers of the leading devices in the chain
+    for (idx = 0; idx < g_num_trail_pad_bits; ++idx)
+    {
+        tunnel_pkt[idx] = 0u;
+    }
+
+    // Generate a tunnel packet to encapsulate the operation to the target
+    pkt_len = tunnel_pkt_create((uint8_t *) &tunnel_pkt[g_num_trail_pad_bits], 1, 0, 0, 0, 0, 0);
+
+    // Pad the end of the DR scan with padding '0's to navigate through the
+    // bypass registers of the trailing devices in the chain
+    for (idx = 0; idx < g_num_lead_pad_bits; ++idx)
+    {
+        tunnel_pkt[pkt_len+g_num_trail_pad_bits+idx] = 0u;
+    }
+
+    // Overall DR scan needs to be extended to take account of the bypass registers
+    // in the chain
+    pkt_len = pkt_len + g_num_lead_pad_bits + g_num_trail_pad_bits;
+
+    // Perform a DR scan to the target device
+    DRSCAN_out_custom((unsigned int)pkt_len, (unsigned char*)in_buff, (unsigned char*)tunnel_pkt);
+}
+
+/*------------------------------------------------------------------------------
+ * Function to perform a tunnelled IR scan
+ */
+void tunnelled_ir_scan
+(
+    uint8_t data_len,
+    uint32_t data
+)
+{
+    uint8_t tunnel_pkt [64];
+    uint8_t in_buff [64];
+    uint8_t pkt_len;
+    uint8_t idx;
+
+    // Pad the start of the DR scan with padding '0's to navigate through the
+    // bypass registers of the leading devices in the chain
+    for (idx = 0; idx < g_num_trail_pad_bits; ++idx)
+    {
+        tunnel_pkt[idx] = 0u;
+    }
+
+    // Generate a tunnel packet to encapsulate the IR scan to the target
+    pkt_len = tunnel_pkt_create((uint8_t *)&tunnel_pkt[g_num_trail_pad_bits], 4, 0b0011, data_len, data, 2, 0b01);
+
+    // Pad the end of the DR scan with padding '0's to navigate through the
+    // bypass registers of the trailing devices in the chain
+    for (idx = 0; idx < g_num_lead_pad_bits; ++idx)
+    {
+         tunnel_pkt[pkt_len+g_num_trail_pad_bits+idx] = 0u;
+    }
+
+    // Overall DR scan needs to be extended to take account of the bypass registers
+    // in the chain
+    pkt_len = pkt_len + g_num_lead_pad_bits + g_num_trail_pad_bits;
+
+    // Perform a DR scan to the target device
+    DRSCAN_out_custom((unsigned int)pkt_len, (unsigned char*)in_buff, (unsigned char*)tunnel_pkt);
+}
+
+/*------------------------------------------------------------------------------
+ * Function to perform a tunneled DR scan (Maximum payload data is 32-bits
+ * plus one extra bit which is discarded as it's the data that was held in the
+ * pipeline register of the FPGA ASIC)
+ */
+uint32_t tunnelled_dr_scan
+(
+    uint8_t data_len,
+    uint32_t data
+)
+{
+    uint8_t tunnel_pkt [64];
+    uint8_t in_buff [64];
+    uint8_t pkt_len;
+    uint8_t id_idx = (3+3+6)+1; // Account for the pipeline register in the FPGA ASIC
+    uint32_t idCode = 0u;
+    uint8_t idx;
+
+    // Pad the start of the DR scan with padding '0's to navigate through the
+    // bypass registers of the leading devices in the chain
+    for (idx = 0; idx < g_num_lead_pad_bits; ++idx)
+    {
+        tunnel_pkt[idx] = 0u;
+    }
+
+    // Perform a DR scan to the target device
+    pkt_len = tunnel_pkt_create((uint8_t *)&tunnel_pkt[g_num_lead_pad_bits], 3, 0b001, data_len, data, 2, 0b01);
+
+    // Pad the end of the DR scan with padding '0's to navigate through the
+    // bypass registers of the trailing devices in the chain
+    for (idx = 0; idx < g_num_trail_pad_bits; ++idx)
+    {
+         tunnel_pkt[pkt_len+g_num_lead_pad_bits+idx] = 0u;
+    }
+
+    // Overall DR scan needs to be extended to take account of the bypass registers
+    // in the chain
+    pkt_len = pkt_len + g_num_lead_pad_bits + g_num_trail_pad_bits;
+
+    // Perform a DR scan to the target device
+    DRSCAN_out_custom((unsigned int)pkt_len, (unsigned char*)in_buff, (unsigned char*)tunnel_pkt);
+
+    // Interpret the corresponding field of the returned array relating to TDO
+    // of the FGPA TAP
+    for (uint8_t lp_idx = 0; lp_idx < (data_len-1); ++lp_idx) // -1 is to discard the data from the pipeline reg
+    {
+        idCode = (((uint32_t)in_buff[id_idx] << lp_idx) | idCode);
+        ++id_idx;
+    }
+
+    return idCode;
+}
+
+/*------------------------------------------------------------------------------
+ * Function to convert a 32-bit unsigned integer to an array of ASCII
+ * characters in either DECIMAL or HEXADECIMAL format
+ */
+void int_to_ascii_array(uint8_t *array_ptr, uint32_t value, uint8_t num_base)
+{
+    uint8_t size = 0;
+    uint8_t element = 0;
+    uint8_t element_1 = 0;
+    uint8_t count = 0;
+    uint8_t sub_value = 0;
+    uint8_t limit = 0;
+    if (0 == value)
+    {
+        *array_ptr = '0';
+        ++array_ptr;
+    }
+    else
+    {
+        // Convert the 32-bit unsigned integer to an array of ASCII characters
+        while(0 != value)
+        {
+            if(HEX_RADIX == num_base)
+            {
+                sub_value = (value % 16);
+                if((0xA <= sub_value) && (0xF))
+                {
+                    *array_ptr = ((sub_value - 0xA) + ('A'));
+                }
+                else
+                {
+                    *array_ptr = (sub_value + ('0'));
+                }
+                value = ((value)/(16));
+            }
+            else if(DEC_RADIX == num_base)
+            {
+                sub_value = (value % 10);
+                *array_ptr = (sub_value + ('0'));
+                value = ((value)/(10));
+            }
+            ++array_ptr;
+            ++size;
+        }
+        // Now lets rotate the array so that the most significant character is
+        // located in the first element rather than the last.
+        limit = (size/2);
+        array_ptr = array_ptr - (size);
+        for(count = 1; count < size; count+=2)
+        {
+            element = *array_ptr;
+            array_ptr = array_ptr + (size - count);
+            element_1 = *array_ptr;
+            *array_ptr = element;
+            array_ptr = array_ptr - (size - count);
+            *array_ptr = element_1;
+            ++ array_ptr;
+        }
+        array_ptr = array_ptr +(size - (limit));
+    }
+    *array_ptr = 0;
+}
+
+/*------------------------------------------------------------------------------
+ * Function to convert an ASCII array of hexadecimal characters to a 32-bit
+ * unsigned integer value.
+ * Note: This function assumes that the most significant character will be
+ * contained in the first element of the array as the character array will
+ * most likely be a UART RX buffer
+ */
+uint32_t hex_ascii_array_to_int (
+    uint8_t num_of_chars,
+    uint8_t * p_array
+)
+{
+    uint8_t temp;
+    uint8_t ret_int = 0u;
+
+    // Jump to the last element in the array as this is the LS char
+    p_array = p_array + (num_of_chars-1);
+    for (uint8_t idx = 0; idx < num_of_chars; ++idx)
+    {
+        if ((*p_array >= 'A') && (*p_array <= 'F'))
+        {
+            temp = 0xA + (*p_array - 'A');
+        }
+        else
+        {
+            temp = *p_array - '0';
+        }
+        ret_int = ret_int | (temp << (4u * idx));
+        --p_array;
+    }
+    return ret_int;
+}
