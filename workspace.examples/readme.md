@@ -28,6 +28,7 @@ Sample Mi-V Libero Projects for the RTG4 Radiation-Tolerant Development Kit.
     7. Once complete, a script report will generated.
 
 ## <a name="Script arguments"></a> Script Arguments
+
 The valid first arguements are: 
 | Arguement    |  Description   |
 | ------------- |:-------------:|
@@ -53,3 +54,7 @@ The peripherals in this design are located at the following addresses.
 | CoreTimer_1   | 0x7000_4000   |
 | CoreGPIO_OUT  | 0x7000_5000   |
 
+## Memory Address
+| Type | Address|
+| ------------- |:-------------:|
+| LSRAM| 0x8000_0000|
