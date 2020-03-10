@@ -5,6 +5,11 @@ Sample Mi-V Libero Projects for the RTG4 Radiation-Tolerant Development Kit.
 ## <a name="quick"></a> Quick Instructions
 
 ### Checkout The Code
+#### Running from the zipped sources
+    1. Download the zipped sources via the "Clone or download" button using "Download Zip" button
+    2. Unzip the sources
+    3. Proceed to step 1 in Running in GUI mode.
+    
 #### Running in batch mode (Ubuntu 18.04)
     $ git clone https://github.com/CLappin/RTG4-Development-Kit/tree/develop/
     $ cd RTG4-Development-Kit
