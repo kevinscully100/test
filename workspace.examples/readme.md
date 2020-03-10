@@ -36,4 +36,15 @@ The valid second arguments are:
 | PLACE_AND_ROUTE | Run place and route on the design  |
 | GENERATE_BITSTREAM | Generate the bitstream of the design|
 | EXPORT_PROGRAMMING_FILE | Export the programming file |
-  
+
+## Peripherals Addresses
+The peripherals in this design are located at the following addresses.
+
+| Peripheral    | Address   |
+| ------------- |:-------------:|
+| CoreUARTapb   | 0x7000_1000   |
+| CoreGPIO_IN   | 0x7000_2000   |
+| CoreTimer_0   | 0x7000_3000   |
+| CoreTimer_1   | 0x7000_4000   |
+| CoreGPIO_OUT  | 0x7000_5000   |
+
